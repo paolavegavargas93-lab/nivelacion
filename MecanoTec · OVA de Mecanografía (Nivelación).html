@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MecanoTec · OVA de Mecanografía (Nivelación)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070714; --panel:#0e0e24; --panel2:#14143a; --line:#24245a;
+  --cyan:#00f0ff; --mag:#ff2bd6; --vio:#8b5cf6; --ok:#39ff88; --warn:#ffcc00; --err:#ff3b5c;
+  --txt:#e6e8ff; --dim:#7c82a8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%;background:var(--bg);color:var(--txt);font-family:'Rajdhani',sans-serif;font-size:17px}
+body{background:
+  radial-gradient(1200px 600px at 10% -10%,rgba(139,92,246,.18),transparent 60%),
+  radial-gradient(900px 500px at 110% 10%,rgba(0,240,255,.12),transparent 60%),
+  radial-gradient(800px 500px at 50% 120%,rgba(255,43,214,.10),transparent 60%),var(--bg);
+  background-attachment:fixed}
+.grid-bg{position:fixed;inset:0;pointer-events:none;opacity:.07;
+  background-image:linear-gradient(var(--cyan) 1px,transparent 1px),linear-gradient(90deg,var(--cyan) 1px,transparent 1px);
+  background-size:44px 44px;mask-image:linear-gradient(to bottom,transparent,black 30%,black 70%,transparent)}
+h1,h2,h3,.orb{font-family:'Orbitron',sans-serif;letter-spacing:.04em}
+.screen{display:none;position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:22px 18px 40px}
+.screen.on{display:block}
+button{font-family:'Orbitron',sans-serif;cursor:pointer;border:none}
+.btn{padding:14px 26px;border-radius:12px;font-weight:700;font-size:15px;letter-spacing:.08em;color:#070714;
+  background:linear-gradient(90deg,var(--cyan),var(--vio));box-shadow:0 0 22px rgba(0,240,255,.35);transition:transform .15s,filter .15s}
+.btn:hover:not(:disabled){transform:translateY(-2px);filter:brightness(1.12)}
+.btn:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
+.btn.mag{background:linear-gradient(90deg,var(--mag),var(--vio));box-shadow:0 0 22px rgba(255,43,214,.35);color:#fff}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--dim);box-shadow:none;font-size:12px;padding:8px 14px}
+.card{background:linear-gradient(180deg,rgba(20,20,58,.85),rgba(14,14,36,.9));border:1px solid var(--line);border-radius:18px;padding:22px}
+
+/* ---------- INICIO ---------- */
+.hero{text-align:center;padding:18px 0 8px}
+.tag{display:inline-block;font-family:'Orbitron';font-size:11px;letter-spacing:.3em;color:var(--mag);border:1px solid rgba(255,43,214,.4);padding:6px 14px;border-radius:30px;margin-bottom:14px}
+.hero h1{font-size:clamp(30px,5vw,54px);font-weight:900;background:linear-gradient(90deg,var(--cyan),var(--vio),var(--mag));-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 40px rgba(0,240,255,.15)}
+.hero p{color:var(--dim);font-size:20px;margin-top:6px}
+.start-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:20px;margin-top:24px}
+@media(max-width:860px){.start-grid{grid-template-columns:1fr}}
+.card h3{font-size:15px;color:var(--cyan);margin-bottom:14px}
+.rules li{list-style:none;padding:8px 0 8px 34px;position:relative;border-bottom:1px dashed rgba(124,130,168,.18);font-size:17px;line-height:1.3}
+.rules li:last-child{border-bottom:none}
+.rules li .ic{position:absolute;left:0;top:7px;width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-size:13px;background:rgba(0,240,255,.12);color:var(--cyan);font-family:'Orbitron';font-weight:700}
+.rules b{color:var(--warn)}
+label{display:block;font-size:14px;color:var(--dim);margin:12px 0 6px;letter-spacing:.05em}
+input[type=text],input[type=password]{width:100%;padding:13px 14px;border-radius:10px;border:1px solid var(--line);background:#0a0a1e;color:var(--txt);font-family:'Rajdhani';font-size:19px;font-weight:600;outline:none}
+input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,240,255,.15)}
+.posture{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.posture div{background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.3);border-radius:12px;padding:10px;text-align:center;font-size:14px;line-height:1.2}
+.posture span{display:block;font-size:24px;margin-bottom:4px}
+.err-msg{color:var(--err);font-size:15px;min-height:20px;margin-top:8px}
+.foot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;gap:10px;flex-wrap:wrap}
+
+/* ---------- JUEGO ---------- */
+.hud{display:grid;grid-template-columns:1.4fr 2fr repeat(3,.8fr) auto;gap:10px;align-items:stretch}
+@media(max-width:980px){.hud{grid-template-columns:1fr 1fr 1fr}}
+.hud .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 12px;display:flex;flex-direction:column;justify-content:center;min-width:0}
+.hud .k{font-size:11px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase;font-family:'Orbitron'}
+.hud .v{font-family:'Orbitron';font-weight:700;font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hud .who .v{font-family:'Rajdhani';font-size:19px}
+.bar{height:8px;background:#0a0a1e;border-radius:6px;overflow:hidden;margin-top:6px;border:1px solid var(--line)}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--mag),var(--cyan));transition:width .5s}
+.timebox .v small{font-size:12px;color:var(--dim)}
+.status{font-size:13px;margin-top:2px}
+.status.run{color:var(--ok)} .status.pause{color:var(--warn)}
+.sndbtn{background:var(--panel);border:1px solid var(--line);border-radius:12px;color:var(--txt);font-size:20px;padding:0 14px}
+
+.lvlhead{display:flex;justify-content:space-between;align-items:flex-end;margin:16px 4px 8px;gap:10px;flex-wrap:wrap}
+.lvlhead h2{font-size:18px;color:var(--cyan)}
+.lvlhead h2 em{font-style:normal;color:var(--mag)}
+.dots{display:flex;gap:6px}
+.dots b{width:26px;height:8px;border-radius:4px;background:#1b1b44;border:1px solid var(--line)}
+.dots b.done{background:var(--ok);border-color:var(--ok);box-shadow:0 0 8px rgba(57,255,136,.5)}
+.dots b.now{background:var(--cyan);border-color:var(--cyan);animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.4}}
+
+.textcard{position:relative;padding:22px 26px;min-height:200px;cursor:text}
+#txt{font-size:27px;line-height:1.65;font-weight:600;white-space:pre-wrap;word-break:normal;color:var(--dim);user-select:none;-webkit-user-select:none}
+#txt .ok{color:var(--ok)}
+#txt .fx{color:var(--warn)}
+#txt .cur{color:#fff;background:rgba(0,240,255,.18);border-bottom:3px solid var(--cyan);border-radius:3px;animation:blink 1s infinite}
+#txt .cur.bad{background:rgba(255,59,92,.45);border-bottom-color:var(--err);animation:shake .18s}
+@keyframes blink{50%{border-bottom-color:transparent}}
+@keyframes shake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+#cap{position:absolute;left:10px;top:10px;width:2px;height:2px;opacity:0;border:none;resize:none;pointer-events:none}
+.focusveil{position:absolute;inset:0;border-radius:18px;background:rgba(7,7,20,.82);display:none;place-items:center;text-align:center;font-family:'Orbitron';font-size:17px;color:var(--cyan);letter-spacing:.06em}
+.focusveil.on{display:grid}
+.focusveil small{display:block;font-family:'Rajdhani';color:var(--dim);font-size:16px;margin-top:6px;letter-spacing:0}
+
+.hint{margin:12px 4px;min-height:28px;font-size:18px;color:var(--dim);display:flex;align-items:center;gap:10px}
+.hint .fdot{width:14px;height:14px;border-radius:50%;flex:none}
+.hint.help{color:var(--warn);font-weight:700}
+
+.kb{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.kr{display:flex;gap:6px}
+.key{flex-basis:0;height:44px;border-radius:8px;background:#11112e;border:1px solid #23234f;border-bottom:3px solid var(--fc,#23234f);
+  position:relative;display:flex;align-items:center;justify-content:center;font-family:'Rajdhani';font-weight:700;font-size:18px;color:#b9bde0;transition:all .08s}
+.key .sh{position:absolute;left:6px;top:2px;font-size:12px;color:var(--dim);font-weight:600}
+.key.sm{font-size:12px;font-family:'Orbitron';color:var(--dim)}
+.key.bump::after{content:'';position:absolute;bottom:6px;width:12px;height:2px;border-radius:2px;background:var(--dim)}
+.key.hl{background:var(--fc);color:#070714;box-shadow:0 0 18px var(--fc);transform:translateY(-2px);border-color:var(--fc)}
+.key.hl .sh{color:#070714}
+.key.press{transform:translateY(2px);filter:brightness(1.4)}
+.spacer{flex-basis:0;height:44px}
+.legend{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:8px;font-size:13px;color:var(--dim)}
+.legend span{display:flex;align-items:center;gap:5px}
+.legend i{width:10px;height:10px;border-radius:50%}
+
+.bottom{display:flex;justify-content:space-between;align-items:center;margin-top:16px;gap:12px;flex-wrap:wrap}
+.bottom .msg{color:var(--dim);font-size:16px}
+.bottom .msg b{color:var(--warn)}
+
+.toast{position:fixed;left:50%;top:22px;transform:translate(-50%,-140%);z-index:30;background:linear-gradient(90deg,rgba(57,255,136,.95),rgba(0,240,255,.95));color:#070714;
+  font-family:'Orbitron';font-weight:700;padding:14px 26px;border-radius:14px;box-shadow:0 0 30px rgba(0,240,255,.5);transition:transform .35s;text-align:center;max-width:92vw}
+.toast.on{transform:translate(-50%,0)}
+.toast small{display:block;font-family:'Rajdhani';font-size:16px;font-weight:600}
+.pauseveil{position:fixed;inset:0;background:rgba(7,7,20,.9);z-index:20;display:none;place-items:center;text-align:center}
+.pauseveil.on{display:grid}
+
+/* ---------- FINAL ---------- */
+.call{margin:6px auto 18px;text-align:center;padding:22px;border-radius:20px;border:2px solid var(--mag);
+  background:linear-gradient(90deg,rgba(255,43,214,.18),rgba(139,92,246,.18));animation:glow 1.4s infinite alternate}
+@keyframes glow{from{box-shadow:0 0 10px rgba(255,43,214,.3)}to{box-shadow:0 0 40px rgba(255,43,214,.8)}}
+.call .big{font-family:'Orbitron';font-weight:900;font-size:clamp(22px,4vw,40px);color:#fff}
+.call .big span{display:inline-block;animation:wave 1s infinite alternate;transform-origin:70% 80%}
+@keyframes wave{to{transform:rotate(18deg)}}
+.call p{font-size:19px;color:#f3d6ff;margin-top:6px}
+.res-grid{display:grid;grid-template-columns:1fr 1.5fr;gap:20px}
+@media(max-width:860px){.res-grid{grid-template-columns:1fr}}
+.notebox{text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.nota{font-family:'Orbitron';font-weight:900;font-size:96px;line-height:1}
+.nota.pass{color:var(--ok);text-shadow:0 0 30px rgba(57,255,136,.6)}
+.nota.fail{color:var(--err);text-shadow:0 0 30px rgba(255,59,92,.6)}
+.badge{display:inline-block;margin-top:12px;padding:8px 18px;border-radius:30px;font-family:'Orbitron';font-weight:700;font-size:14px;letter-spacing:.12em}
+.badge.pass{background:rgba(57,255,136,.15);color:var(--ok);border:1px solid var(--ok)}
+.badge.fail{background:rgba(255,59,92,.15);color:var(--err);border:1px solid var(--err)}
+.studentline{margin-top:14px;font-size:19px;font-weight:700}
+.studentline small{display:block;color:var(--dim);font-weight:500;font-size:15px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:#0a0a1e;border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center}
+.stat .k{font-size:12px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase}
+.stat .v{font-family:'Orbitron';font-weight:700;font-size:22px;margin-top:4px;color:var(--cyan)}
+.formula{margin-top:14px;font-size:15px;color:var(--dim);line-height:1.4}
+.formula b{color:var(--txt)}
+.weak{margin-top:12px;font-size:16px}
+.weak span{display:inline-block;margin:4px 6px 0 0;padding:4px 10px;border-radius:8px;background:rgba(255,59,92,.14);border:1px solid rgba(255,59,92,.4);font-weight:700}
+
+/* ---------- MODAL ---------- */
+.modal{position:fixed;inset:0;background:rgba(3,3,12,.85);z-index:40;display:none;place-items:center;padding:16px}
+.modal.on{display:grid}
+.modal .card{width:min(560px,100%);max-height:90vh;overflow:auto}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:15px}
+th,td{border-bottom:1px solid var(--line);padding:6px;text-align:left}
+th{color:var(--cyan);font-family:'Orbitron';font-size:11px;letter-spacing:.08em}
+.row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.chk{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:17px;cursor:pointer}
+.chk input{width:20px;height:20px;accent-color:var(--cyan)}
+.demo-tag{display:none;color:var(--warn);font-family:'Orbitron';font-size:11px;letter-spacing:.12em}
+.demo-tag.on{display:inline}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<!-- ===================== PANTALLA DE INICIO ===================== -->
+<section class="screen on" id="sStart">
+  <div class="hero">
+    <div class="tag">MISAELVERSE · OVA DE NIVELACIÓN · TECNOLOGÍA</div>
+    <h1>MECANOTEC</h1>
+    <p>Misión teclado: la importancia de la tecnología en la actualidad</p>
+  </div>
+
+  <div class="start-grid">
+    <div class="card">
+      <h3>📋 REGLAS DE LA MISIÓN</h3>
+      <ul class="rules">
+        <li><span class="ic">1</span>Debes escribir durante <b>mínimo 30 minutos de tiempo activo</b>. El reloj solo avanza mientras estás escribiendo.</li>
+        <li><span class="ic">2</span>Si dejas de escribir más de 8 segundos o cambias de pestaña, el reloj <b>se detiene</b>.</li>
+        <li><span class="ic">3</span>Son <b>10 niveles</b> de lectura sobre la tecnología. Escribe cada letra, tilde y signo tal como aparece.</li>
+        <li><span class="ic">4</span>Cada tecla equivocada cuenta como error. No puedes avanzar hasta pulsar la tecla correcta. No se permite pegar texto.</li>
+        <li><span class="ic">5</span>Tu nota (1.0 a 5.0) depende de tu <b>precisión</b> y tu <b>velocidad</b>. Para aprobar necesitas <b>mínimo 4.0</b>.</li>
+        <li><span class="ic">6</span>Al terminar, <b>levanta la mano y llama al profesor</b> para que revise tu resultado. No cierres la página.</li>
+      </ul>
+      <div class="posture">
+        <div><span>🪑</span>Espalda recta y pies en el piso</div>
+        <div><span>✋</span>Dedos en la fila guía: ASDF · JKLÑ</div>
+        <div><span>👀</span>Mira la pantalla, no el teclado</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🧑‍🚀 DATOS DEL ESTUDIANTE</h3>
+      <form id="fStart" autocomplete="off">
+        <label for="iName">Nombre completo</label>
+        <input type="text" id="iName" maxlength="60" placeholder="Ej: Laura Sofía Gómez Ruiz">
+        <label for="iCurso">Curso</label>
+        <input type="text" id="iCurso" maxlength="12" placeholder="Ej: 801">
+        <div class="err-msg" id="startErr"></div>
+        <div class="foot">
+          <button type="button" class="btn ghost" id="bTeacherStart">🔒 Docente</button>
+          <button type="submit" class="btn">INICIAR MISIÓN ▶</button>
+        </div>
+      </form>
+      <p style="color:var(--dim);font-size:14px;margin-top:16px;line-height:1.35">El teclado en pantalla te muestra qué tecla y qué dedo usar. Distribución: <b style="color:var(--txt)">Español (Latinoamérica)</b>. Para las tildes pulsa primero la tecla <b style="color:var(--txt)">´</b> y luego la vocal.</p>
+      <p class="demo-tag" id="demoTagStart" style="margin-top:10px">● MODO DEMOSTRACIÓN ACTIVO: tiempo mínimo de 1 minuto</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== PANTALLA DE PRÁCTICA ===================== -->
+<section class="screen" id="sGame">
+  <div class="hud">
+    <div class="box who"><div class="k">Estudiante <span class="demo-tag" id="demoTag">· DEMO</span></div><div class="v" id="hWho">—</div></div>
+    <div class="box timebox">
+      <div class="k">Tiempo activo</div>
+      <div class="v"><span id="hTime">00:00</span> <small>/ <span id="hMin">30:00</span></small></div>
+      <div class="bar"><i id="hBar"></i></div>
+      <div class="status pause" id="hStatus">⏸ Escribe para iniciar el reloj</div>
+    </div>
+    <div class="box"><div class="k">Palabras/min</div><div class="v" id="hPpm">0</div></div>
+    <div class="box"><div class="k">Precisión</div><div class="v" id="hAcc">100%</div></div>
+    <div class="box"><div class="k">Nota estimada</div><div class="v" id="hNota">—</div></div>
+    <button class="sndbtn" id="bSnd" title="Sonido">🔊</button>
+  </div>
+
+  <div class="lvlhead">
+    <h2 id="lvlTitle">NIVEL 1 · …</h2>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <span style="color:var(--dim);font-size:15px" id="parInfo">Párrafo 1 de 3</span>
+      <div class="dots" id="dots"></div>
+    </div>
+  </div>
+
+  <div class="card textcard" id="textCard">
+    <textarea id="cap" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+    <div id="txt"></div>
+    <div class="focusveil" id="focusVeil"><div>⌨ HAZ CLIC AQUÍ PARA ESCRIBIR<small>El reloj está detenido mientras no escribas</small></div></div>
+  </div>
+
+  <div class="hint" id="hint"><span class="fdot"></span><span id="hintTxt"></span></div>
+
+  <div class="kb" id="kb"></div>
+  <div class="legend" id="legend"></div>
+
+  <div class="bottom">
+    <div class="msg" id="bottomMsg">Te faltan <b id="missing">30:00</b> de escritura activa para poder terminar.</div>
+    <button class="btn mag" id="bFinish" disabled>TERMINAR Y VER MI NOTA ■</button>
+  </div>
+</section>
+
+<!-- ===================== PANTALLA FINAL ===================== -->
+<section class="screen" id="sFinal">
+  <div class="call">
+    <div class="big"><span>🙋</span> ¡LLAMA AL PROFESOR!</div>
+    <p>Levanta la mano y espera a que tu profesor revise este resultado. No cierres ni recargues la página.</p>
+  </div>
+  <div class="res-grid">
+    <div class="card notebox">
+      <div class="k" style="font-family:'Orbitron';font-size:12px;color:var(--dim);letter-spacing:.2em">NOTA FINAL</div>
+      <div class="nota" id="fNota">0.0</div>
+      <div class="badge" id="fBadge">—</div>
+      <div class="studentline" id="fWho">—</div>
+      <div style="color:var(--dim);font-size:14px;margin-top:6px" id="fDate"></div>
+    </div>
+    <div class="card">
+      <h3>📊 RESULTADOS DE LA MISIÓN</h3>
+      <div class="stats">
+        <div class="stat"><div class="k">Tiempo activo</div><div class="v" id="fTime">—</div></div>
+        <div class="stat"><div class="k">Palabras/min</div><div class="v" id="fPpm">—</div></div>
+        <div class="stat"><div class="k">Precisión</div><div class="v" id="fAcc">—</div></div>
+        <div class="stat"><div class="k">Palabras escritas</div><div class="v" id="fWords">—</div></div>
+        <div class="stat"><div class="k">Párrafos</div><div class="v" id="fPars">—</div></div>
+        <div class="stat"><div class="k">Errores</div><div class="v" id="fErr">—</div></div>
+      </div>
+      <div class="weak" id="fWeak"></div>
+      <div class="formula" id="fFormula"></div>
+      <div class="row" style="justify-content:flex-end"><button class="btn ghost" id="bTeacherFinal">🔒 Panel docente</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- Pausa por cambio de pestaña -->
+<div class="pauseveil" id="pauseVeil"><div><h2 style="color:var(--warn);font-size:28px">⏸ MISIÓN EN PAUSA</h2><p style="font-size:19px;color:var(--dim);margin-top:10px">Saliste de la página. El reloj se detuvo.<br>Haz clic en el texto y sigue escribiendo.</p></div></div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Modal docente -->
+<div class="modal" id="mTeacher">
+  <div class="card">
+    <h3>🔒 ACCESO DOCENTE</h3>
+    <div id="pinStep">
+      <label for="iPin">Clave docente</label>
+      <input type="password" id="iPin" maxlength="20">
+      <div class="err-msg" id="pinErr"></div>
+      <div class="row" style="justify-content:flex-end">
+        <button class="btn ghost" data-close>Cancelar</button>
+        <button class="btn" id="bPin">ENTRAR</button>
+      </div>
+    </div>
+    <div id="tStart" style="display:none">
+      <label class="chk"><input type="checkbox" id="cDemo"> Modo demostración (tiempo mínimo de 1 minuto, para probar el OVA)</label>
+      <div class="row" style="justify-content:flex-end"><button class="btn" data-close>LISTO</button></div>
+    </div>
+    <div id="tFinal" style="display:none">
+      <div id="tDetail"></div>
+      <div class="row" style="justify-content:space-between">
+        <button class="btn ghost" data-close>Cerrar</button>
+        <button class="btn mag" id="bReset">NUEVO INTENTO ↺</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ======================================================
+   CONFIGURACIÓN (la docente puede ajustar estos valores)
+   ====================================================== */
+const CONFIG = {
+  MIN_MINUTOS: 30,     // tiempo activo mínimo de escritura
+  NOTA_MINIMA: 4.0,    // nota mínima para aprobar
+  CLAVE_DOCENTE: 'MISAEL5',
+  INACTIVIDAD_SEG: 8,  // segundos sin teclear para pausar el reloj
+  // Escala de la nota: Nota = 1.0 + 4.0 × (50% precisión + 50% velocidad)
+  PREC_CERO: 0.80,  PREC_TOPE: 0.97,   // 80% o menos = 0 puntos · 97% o más = puntaje completo
+  PPM_CERO: 5,      PPM_TOPE: 25,      // 5 ppm o menos = 0 puntos · 25 ppm o más = puntaje completo
+  PESO_PREC: 0.5,   PESO_PPM: 0.5
+};
+
+/* ======================================================
+   TEXTOS: LA IMPORTANCIA DE LA TECNOLOGÍA EN LA ACTUALIDAD
+   ====================================================== */
+const NIVELES = [
+ {t:'La tecnología en nuestra vida diaria', p:[
+  'La tecnología está presente en casi todo lo que hacemos cada día. Desde que suena la alarma del celular en la mañana hasta que apagamos la luz en la noche, usamos herramientas creadas por el ser humano para hacer la vida más fácil. La tecnología no son solo los computadores o los teléfonos; también es la estufa, la bicicleta, el lápiz y hasta la puerta de nuestra casa.',
+  'Cuando hablamos de tecnología nos referimos al conjunto de conocimientos, técnicas y objetos que las personas inventan para resolver problemas y satisfacer necesidades. Por eso, cada vez que alguien diseña una solución para algo que le preocupa, está haciendo tecnología. Un estudiante que organiza su horario en una hoja de cálculo también está usando la tecnología a su favor.',
+  'En la actualidad es difícil imaginar un mundo sin tecnología. Gracias a ella podemos cocinar los alimentos, transportarnos de un lugar a otro, estudiar desde la casa y comunicarnos con familiares que viven lejos. Sin embargo, la tecnología no es buena ni mala por sí misma: todo depende del uso que le demos. Aprender a usarla con responsabilidad es una tarea de todos.'
+ ]},
+ {t:'De la piedra al computador', p:[
+  'La historia de la tecnología es tan antigua como la historia de la humanidad. Los primeros seres humanos tallaron piedras para cazar y cortar alimentos. Luego aprendieron a controlar el fuego, lo que les permitió cocinar, calentarse y protegerse de los animales. Cada uno de estos avances cambió para siempre la manera de vivir de las comunidades.',
+  'Con el paso de los siglos aparecieron inventos que transformaron el mundo: la rueda, la escritura, la imprenta, la máquina de vapor y la electricidad. La imprenta, por ejemplo, permitió que los libros llegaran a muchas más personas, y la electricidad hizo posible el funcionamiento de fábricas, hospitales y hogares. Cada invento se apoyó en los conocimientos de quienes vinieron antes.',
+  'En el siglo veinte llegaron la radio, la televisión, el computador e internet. Los primeros computadores eran tan grandes que ocupaban habitaciones enteras; hoy llevamos en el bolsillo un teléfono mucho más poderoso que aquellas máquinas. Esta evolución nos enseña que la tecnología avanza muy rápido y que debemos estar dispuestos a aprender durante toda la vida.'
+ ]},
+ {t:'La comunicación en la era digital', p:[
+  'Uno de los cambios más grandes que ha traído la tecnología está en la forma como nos comunicamos. Hace algunas décadas, una carta podía tardar semanas en llegar a su destino. Hoy, un mensaje viaja de un país a otro en apenas segundos. Las videollamadas nos permiten ver y escuchar a una persona que está al otro lado del mundo.',
+  'Las redes sociales, el correo electrónico y las aplicaciones de mensajería nos conectan con amigos, familiares, profesores y compañeros de trabajo. Gracias a estas herramientas, muchas personas pueden organizarse, compartir ideas, aprender juntas y apoyar causas importantes para su comunidad. La comunicación digital también ayuda a que las noticias se conozcan con rapidez.',
+  'Sin embargo, comunicarnos por medios digitales exige responsabilidad. Antes de compartir una noticia debemos verificar si es verdadera, porque la información falsa se difunde muy rápido. También es importante cuidar las palabras: detrás de cada pantalla hay una persona con sentimientos. Respetar a los demás en internet es tan importante como respetarlos en el salón de clase.'
+ ]},
+ {t:'Tecnología y educación', p:[
+  'La tecnología ha transformado la manera de aprender y de enseñar. Hoy un estudiante puede consultar una enciclopedia digital, ver un video que explica un tema de matemáticas o practicar inglés con una aplicación. Los objetos virtuales de aprendizaje, como el que estás usando en este momento, permiten estudiar a tu propio ritmo y repetir las actividades cuantas veces sea necesario.',
+  'Las plataformas educativas permiten que los profesores compartan materiales, reciban tareas y den retroalimentación a sus estudiantes. Durante los tiempos en que no fue posible asistir al colegio, muchas familias descubrieron que con un computador y una buena conexión se podía seguir aprendiendo desde la casa. Esa experiencia mostró lo valiosa que es la tecnología para la educación.',
+  'Pero tener acceso a la información no es lo mismo que aprender. ¿Qué significa aprender de verdad? Significa leer con atención, hacer preguntas, comparar fuentes y practicar con constancia. Por eso la mecanografía es tan útil: escribir rápido y sin errores te permite tomar apuntes, hacer trabajos y presentar evaluaciones con más tranquilidad y mejor calidad.'
+ ]},
+ {t:'La tecnología al servicio de la salud', p:[
+  'En el campo de la salud, la tecnología salva millones de vidas. Los equipos de rayos X, las ecografías y los escáneres permiten a los médicos observar el interior del cuerpo sin necesidad de hacer una cirugía. Gracias a estos aparatos es posible detectar enfermedades a tiempo y elegir el tratamiento más adecuado para cada paciente.',
+  'Las vacunas y los medicamentos también son resultado del trabajo científico y tecnológico. Los laboratorios usan computadores para analizar muestras, estudiar virus y crear nuevos tratamientos. Además, existen prótesis y dispositivos que ayudan a las personas con discapacidad a moverse, escuchar o comunicarse mejor, mejorando así su calidad de vida.',
+  'Hoy también es común la telemedicina, que permite a un paciente hablar con su médico a través de una videollamada. Esto es muy útil para quienes viven en lugares lejanos. Sin embargo, la tecnología no reemplaza los buenos hábitos: dormir bien, comer saludable, hacer ejercicio y descansar de las pantallas también son formas de cuidar nuestra salud.'
+ ]},
+ {t:'El trabajo y los empleos del futuro', p:[
+  'El mundo del trabajo ha cambiado mucho gracias a la tecnología. Las máquinas y los robots realizan tareas pesadas o peligrosas en las fábricas, y los computadores permiten organizar la información de empresas enteras. Muchas personas trabajan desde su casa usando internet, y algunas profesiones que hoy son muy importantes no existían hace unos pocos años.',
+  'Programadores, diseñadores gráficos, creadores de contenido, analistas de datos y técnicos en redes son algunos ejemplos de los empleos que han surgido con la tecnología. Incluso los oficios tradicionales, como la agricultura, la construcción o el comercio, usan ahora herramientas digitales para mejorar su trabajo y llegar a más clientes.',
+  'Por esta razón, las habilidades tecnológicas son cada vez más valoradas. Saber escribir en el teclado con rapidez, manejar un procesador de textos, buscar información confiable y trabajar en equipo de forma virtual son competencias que te abrirán puertas en el futuro. Lo que practicas hoy en el colegio será una herramienta para tu vida laboral.'
+ ]},
+ {t:'La inteligencia artificial', p:[
+  'La inteligencia artificial es una de las tecnologías más comentadas de nuestro tiempo. Se trata de programas de computador capaces de realizar tareas que antes solo podían hacer las personas, como reconocer imágenes, traducir idiomas, responder preguntas o recomendar canciones. Muchas de las aplicaciones que usamos a diario ya funcionan con inteligencia artificial.',
+  'Estas herramientas pueden ser de gran ayuda para estudiar, crear y resolver problemas. Un estudiante puede pedirle a un asistente que le explique un tema difícil o que le sugiera ideas para un proyecto. Sin embargo, la inteligencia artificial también se equivoca, y por eso es necesario revisar siempre la información que nos entrega y contrastarla con otras fuentes.',
+  'Usar la inteligencia artificial de forma ética significa no copiar trabajos sin entenderlos, reconocer cuándo usamos estas herramientas y no utilizarlas para engañar o hacer daño a otros. La inteligencia artificial debe ser una aliada para pensar mejor, no un reemplazo de nuestro propio esfuerzo. Al final, la creatividad y el criterio humano siguen siendo indispensables.'
+ ]},
+ {t:'Tecnología y medio ambiente', p:[
+  'La tecnología tiene una relación muy estrecha con el cuidado del medio ambiente. Por un lado, la fabricación de aparatos electrónicos consume energía y recursos naturales, y los dispositivos que botamos se convierten en basura electrónica, que puede contaminar el suelo y el agua si no se recicla de manera adecuada.',
+  'Por otro lado, la tecnología también ofrece soluciones para proteger el planeta. Los paneles solares y los molinos de viento producen energía limpia; los sensores permiten medir la calidad del aire; y las aplicaciones ayudan a los agricultores a usar el agua de forma más eficiente. Muchos jóvenes en el mundo crean proyectos tecnológicos para cuidar la naturaleza.',
+  'Todos podemos aportar desde la casa y el colegio: apagar los equipos cuando no los usamos, cuidar los dispositivos para que duren más tiempo, llevar las pilas y los aparatos dañados a los puntos de recolección y pensar dos veces antes de comprar algo que no necesitamos. Una tecnología responsable es también una tecnología sostenible.'
+ ]},
+ {t:'Ciudadanía digital y uso responsable', p:[
+  'Ser un buen ciudadano digital significa usar internet y las redes sociales con respeto, responsabilidad y seguridad. Todo lo que publicamos deja una huella digital, es decir, un rastro de información que puede quedar guardado por mucho tiempo. Por eso es importante pensar bien antes de compartir una foto, un comentario o un dato personal.',
+  'Para proteger nuestra información debemos crear contraseñas seguras, que combinen letras mayúsculas, minúsculas, números y símbolos, y no compartirlas con nadie. También debemos desconfiar de mensajes que piden datos personales o que prometen premios demasiado buenos para ser verdad. Si algo en internet te hace sentir incómodo, lo mejor es hablar con un adulto de confianza.',
+  'El ciberacoso es un problema serio que afecta a muchos niños, niñas y jóvenes. Burlarse, insultar o difundir imágenes de otra persona sin su permiso puede causar mucho daño. Un ciudadano digital responsable no participa en estas situaciones, apoya a quien está siendo afectado y reporta lo que sucede. La convivencia también se construye en los espacios virtuales.'
+ ]},
+ {t:'El futuro está en tus manos', p:[
+  'La tecnología seguirá avanzando y transformando nuestra sociedad. Tal vez en pocos años veamos carros que se manejan solos, casas inteligentes que ahorran energía y nuevas formas de aprender con realidad virtual. Nadie sabe con certeza cómo será el futuro, pero sí sabemos que las personas que entiendan la tecnología tendrán más oportunidades para participar en él.',
+  'En Colombia y en nuestra ciudad hay muchos jóvenes que ya están usando la tecnología para emprender, crear contenido, programar videojuegos o resolver problemas de su barrio. No es necesario ser un genio para empezar: basta con tener curiosidad, ganas de aprender y la disciplina de practicar un poco cada día, tal como lo estás haciendo ahora.',
+  'Recuerda que la tecnología es una herramienta y que tú decides para qué la usas. Puedes usarla para aprender, para ayudar a otros, para expresar tus ideas y para construir un mejor futuro. Cada palabra que escribes en este teclado es un paso más en tu formación. ¡Sigue practicando, mantén la concentración y demuestra todo lo que eres capaz de lograr!'
+ ]}
+];
+
+/* ======================================================
+   TECLADO ESPAÑOL (LATINOAMÉRICA)
+   ====================================================== */
+const ROWS = [
+ [['|','°'],['1','!'],['2','"'],['3','#'],['4','$'],['5','%'],['6','&'],['7','/'],['8','('],['9',')'],['0','='],["'",'?'],['¿','¡'],{id:'Back',l:'⌫',w:2}],
+ [{id:'Tab',l:'TAB',w:1.5},['q'],['w'],['e'],['r'],['t'],['y'],['u'],['i'],['o'],['p'],['´','¨'],['+','*'],{id:'Enter',l:'ENTER',w:1.5}],
+ [{id:'Bloq',l:'BLOQ',w:1.8},['a'],['s'],['d'],['f'],['g'],['h'],['j'],['k'],['l'],['ñ'],['{','['],['}',']'],{id:'Enter',l:'',w:1.2}],
+ [{id:'ShiftL',l:'⇧ SHIFT',w:1.4},['<','>'],['z'],['x'],['c'],['v'],['b'],['n'],['m'],[',',';'],['.',':'],['-','_'],{id:'ShiftR',l:'⇧ SHIFT',w:2.6}],
+ [{sp:4},{id:'Space',l:'',w:7},{sp:4}]
+];
+const FINGER = {};
+const FN = ['Meñique izquierdo','Anular izquierdo','Medio izquierdo','Índice izquierdo','Pulgar','Índice derecho','Medio derecho','Anular derecho','Meñique derecho'];
+const FC = ['#ff2bd6','#8b5cf6','#00f0ff','#39ff88','#9aa3c7','#ffcc00','#00f0ff','#8b5cf6','#ff2bd6'];
+[[0,'| 1 q a < z Tab Bloq ShiftL'],[1,'2 w s x'],[2,'3 e d c'],[3,'4 5 r t f g v b'],[4,'Space'],
+ [5,'6 7 y u h j n m'],[6,'8 i k ,'],[7,'9 o l .'],[8,"0 ' ¿ p ´ + ñ { } - Back Enter ShiftR"]]
+ .forEach(([f,s])=>s.split(' ').forEach(k=>FINGER[k]=f));
+const SHIFTMAP = {}, KEYSET = new Set(), KEYEL = {};
+const ACCENT = {'á':'a','é':'e','í':'i','ó':'o','ú':'u','Á':'A','É':'E','Í':'I','Ó':'O','Ú':'U'};
+
+function buildKeyboard(){
+  const kb = document.getElementById('kb');
+  ROWS.forEach(row=>{
+    const r = document.createElement('div'); r.className='kr';
+    row.forEach(k=>{
+      if(k.sp){ const s=document.createElement('div'); s.className='spacer'; s.style.flexGrow=k.sp; r.appendChild(s); return; }
+      const el = document.createElement('div'); el.className='key';
+      let id;
+      if(Array.isArray(k)){
+        id = k[0]; KEYSET.add(id); if(k[1]) SHIFTMAP[k[1]] = id;
+        el.style.flexGrow = 1;
+        el.textContent = /[a-zñ]/.test(id) ? id.toUpperCase() : id;
+        if(k[1]){ const sh=document.createElement('span'); sh.className='sh'; sh.textContent=k[1]; el.appendChild(sh); }
+        if(id==='f'||id==='j') el.classList.add('bump');
+      } else {
+        id = k.id; el.style.flexGrow = k.w; el.classList.add('sm'); el.textContent = k.l;
+      }
+      el.style.setProperty('--fc', FC[FINGER[id] ?? 4]);
+      (KEYEL[id] = KEYEL[id] || []).push(el);
+      r.appendChild(el);
+    });
+    kb.appendChild(r);
+  });
+  const lg = document.getElementById('legend');
+  [['Meñiques',0],['Anulares',1],['Medios',2],['Índice izq.',3],['Índice der.',5],['Pulgares',4]].forEach(([n,i])=>{
+    lg.insertAdjacentHTML('beforeend',`<span><i style="background:${FC[i]}"></i>${n}</span>`);
+  });
+}
+const isLeft = f => f <= 3;
+function keysFor(ch){
+  if(ch===' ') return {keys:['Space'], main:'Space'};
+  if(ACCENT[ch]){
+    const b = ACCENT[ch], r = keysFor(b);
+    return {keys:['´',...r.keys], main:r.main, dead:true, base:b.toLowerCase()};
+  }
+  const lo = ch.toLowerCase();
+  if(ch!==lo && KEYSET.has(lo)) return {keys:[lo, isLeft(FINGER[lo])?'ShiftR':'ShiftL'], main:lo, shift:true};
+  if(KEYSET.has(ch)) return {keys:[ch], main:ch};
+  if(SHIFTMAP[ch]){ const b=SHIFTMAP[ch]; return {keys:[b, isLeft(FINGER[b])?'ShiftR':'ShiftL'], main:b, shift:true}; }
+  return {keys:[], main:null};
+}
+
+/* ======================================================
+   ESTADO
+   ====================================================== */
+const S = {};
+function resetState(){
+  Object.assign(S,{
+    name:'', curso:'', started:false, finished:false, activeSec:0, correct:0, errors:0,
+    lvl:0, par:0, pos:0, round:1, parsDone:0, levelsDone:0, errKeys:{}, miss:0, posHadErr:false,
+    lastKey:0, reachedMin:false, startDate:null, lvlC:0, lvlE:0, lvlT0:0, lvlLog:[]
+  });
+}
+resetState();
+let DEMO = false;
+const minSec = () => (DEMO ? 1 : CONFIG.MIN_MINUTOS) * 60;
+
+/* ======================================================
+   AUDIO (Web Audio API)
+   ====================================================== */
+let AC = null, soundOn = true;
+function beep(f,d,type='sine',v=.05,delay=0){
+  if(!soundOn || !AC) return;
+  const t = AC.currentTime + delay, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f,t);
+  g.gain.setValueAtTime(v,t); g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  o.connect(g).connect(AC.destination); o.start(t); o.stop(t+d+.02);
+}
+const sTick = () => beep(1500,.025,'square',.012);
+const sErr  = () => beep(150,.14,'sawtooth',.045);
+const sPar  = () => [660,880,1100].forEach((f,i)=>beep(f,.12,'triangle',.05,i*.08));
+const sLvl  = () => [523,659,784,1046,1318].forEach((f,i)=>beep(f,.16,'triangle',.06,i*.09));
+
+/* ======================================================
+   UTILIDADES
+   ====================================================== */
+const $ = id => document.getElementById(id);
+const clamp = (x,a=0,b=1) => Math.max(a,Math.min(b,x));
+const mmss = s => String(Math.floor(s/60)).padStart(2,'0')+':'+String(Math.floor(s%60)).padStart(2,'0');
+const esc = s => s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on', s.id===id)); window.scrollTo(0,0); }
+let toastT;
+function toast(html,ms=2600){ const t=$('toast'); t.innerHTML=html; t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),ms); }
+
+function calc(){
+  const min = S.activeSec/60;
+  const ppm = min > 0 ? (S.correct/5)/min : 0;
+  const tot = S.correct + S.errors;
+  const acc = tot > 0 ? S.correct/tot : 1;
+  const P = clamp((acc-CONFIG.PREC_CERO)/(CONFIG.PREC_TOPE-CONFIG.PREC_CERO));
+  const V = clamp((ppm-CONFIG.PPM_CERO)/(CONFIG.PPM_TOPE-CONFIG.PPM_CERO));
+  const nota = Math.round((1 + 4*(CONFIG.PESO_PREC*P + CONFIG.PESO_PPM*V))*10)/10;
+  return {ppm, acc, P, V, nota, words: Math.round(S.correct/5)};
+}
+
+/* ======================================================
+   INICIO
+   ====================================================== */
+$('fStart').addEventListener('submit', e=>{
+  e.preventDefault();
+  const n = $('iName').value.trim().replace(/\s+/g,' '), c = $('iCurso').value.trim();
+  if(n.split(' ').length < 2){ $('startErr').textContent='Escribe tu nombre y apellido completos.'; return; }
+  if(!c){ $('startErr').textContent='Escribe tu curso.'; return; }
+  try{ AC = AC || new (window.AudioContext||window.webkitAudioContext)(); AC.resume && AC.resume(); }catch(_){ AC=null; }
+  S.name = n; S.curso = c; S.startDate = new Date();
+  $('hWho').textContent = `${n} · ${c}`;
+  $('hMin').textContent = mmss(minSec());
+  $('demoTag').classList.toggle('on', DEMO);
+  show('sGame');
+  loadParagraph();
+  focusCap();
+});
+
+/* ======================================================
+   PRÁCTICA
+   ====================================================== */
+let spans = [];
+function loadParagraph(){
+  const L = NIVELES[S.lvl], txt = L.p[S.par];
+  $('lvlTitle').innerHTML = `NIVEL ${S.lvl+1} · <em>${esc(L.t.toUpperCase())}</em>${S.round>1?` <span style="color:var(--warn);font-size:13px">(RONDA ${S.round})</span>`:''}`;
+  $('parInfo').textContent = `Párrafo ${S.par+1} de ${L.p.length}`;
+  const dots = $('dots'); dots.innerHTML='';
+  NIVELES.forEach((_,i)=>{ const b=document.createElement('b'); if(i<S.lvl) b.className='done'; if(i===S.lvl) b.className='now'; dots.appendChild(b); });
+  const box = $('txt'); box.innerHTML=''; spans=[];
+  for(const ch of txt){ const s=document.createElement('span'); s.textContent=ch; box.appendChild(s); spans.push(s); }
+  S.pos = 0; S.miss = 0; S.posHadErr = false;
+  paintCursor();
+}
+function para(){ return NIVELES[S.lvl].p[S.par]; }
+function paintCursor(){
+  spans.forEach(s=>s.classList.remove('cur','bad'));
+  if(spans[S.pos]) spans[S.pos].classList.add('cur');
+  // teclado
+  Object.values(KEYEL).flat().forEach(k=>k.classList.remove('hl'));
+  const ch = [...para()][S.pos];
+  if(ch===undefined) return;
+  const m = keysFor(ch);
+  m.keys.forEach(id=>(KEYEL[id]||[]).forEach(el=>el.classList.add('hl')));
+  // pista
+  const disp = ch===' ' ? 'ESPACIO' : ch;
+  const f = FINGER[m.main] ?? 4;
+  let h;
+  if(m.dead) h = `Letra con tilde «${disp}»: pulsa la tecla ´ con el meñique derecho, suéltala y luego la ${m.base.toUpperCase()} con el ${FN[f].toLowerCase()}.`;
+  else {
+    h = `Siguiente: «${disp}» → ${FN[f]}`;
+    if(m.shift) h += ` + SHIFT ${m.keys.includes('ShiftL')?'izquierdo (meñique izq.)':'derecho (meñique der.)'}`;
+    if(ch==='¿') h = 'Siguiente: «¿» → Meñique derecho (la tecla ¿ está dos teclas a la derecha del 0)';
+    if(ch==='¡') h = 'Siguiente: «¡» → SHIFT izquierdo + tecla ¿ con el meñique derecho';
+  }
+  const hint = $('hint');
+  hint.classList.toggle('help', S.miss>=2);
+  if(S.miss>=2) h = '⚠ ' + h;
+  hint.querySelector('.fdot').style.background = FC[f];
+  $('hintTxt').textContent = h;
+}
+function flashKey(ch){
+  const m = keysFor(ch);
+  m.keys.forEach(id=>(KEYEL[id]||[]).forEach(el=>{ el.classList.add('press'); setTimeout(()=>el.classList.remove('press'),90); }));
+}
+
+function typeChar(ch){
+  if(S.finished || !spans.length) return;
+  if(ch==='\n' || ch==='\r' || ch==='\t') return;
+  if(ch===' ') ch=' ';
+  S.started = true;
+  S.lastKey = Date.now();
+  const chars = [...para()];
+  const exp = chars[S.pos];
+  if(ch === exp){
+    S.correct++; S.lvlC++;
+    spans[S.pos].classList.add(S.posHadErr ? 'fx' : 'ok');
+    S.pos++; S.miss = 0; S.posHadErr = false;
+    sTick(); flashKey(exp);
+    if(S.pos >= chars.length){ paragraphDone(); return; }
+    paintCursor();
+  } else {
+    S.errors++; S.lvlE++; S.miss++; S.posHadErr = true;
+    const key = exp===' ' ? 'espacio' : exp;
+    S.errKeys[key] = (S.errKeys[key]||0) + 1;
+    sErr();
+    const sp = spans[S.pos]; sp.classList.remove('bad'); void sp.offsetWidth; sp.classList.add('bad');
+    if(S.miss===2) paintCursor(), spans[S.pos].classList.add('bad');
+  }
+  updateHUD();
+}
+
+function paragraphDone(){
+  S.parsDone++;
+  const L = NIVELES[S.lvl];
+  if(S.par < L.p.length-1){
+    S.par++; sPar();
+    toast(`✔ PÁRRAFO COMPLETADO<small>Sigue así: párrafo ${S.par+1} de ${L.p.length}</small>`,1800);
+  } else {
+    const t = Math.max(1, S.activeSec - S.lvlT0)/60;
+    const lp = (S.lvlC/5)/t, la = S.lvlC/Math.max(1,S.lvlC+S.lvlE);
+    S.lvlLog.push({n:S.lvl+1, r:S.round, t:L.t, ppm:lp, acc:la});
+    S.levelsDone++; S.lvlC=0; S.lvlE=0; S.lvlT0=S.activeSec;
+    sLvl();
+    if(S.lvl < NIVELES.length-1){
+      S.lvl++; S.par = 0;
+      toast(`🏆 ¡NIVEL ${S.lvl} SUPERADO!<small>${Math.round(lp)} ppm · ${Math.round(la*100)}% de precisión</small>`,2800);
+    } else {
+      S.lvl = 0; S.par = 0; S.round++;
+      toast(`🚀 ¡COMPLETASTE LOS 10 NIVELES!<small>Comienza la ronda ${S.round}. Sigue practicando.</small>`,3500);
+    }
+  }
+  loadParagraph();
+  updateHUD();
+}
+
+function updateHUD(){
+  const r = calc(), need = minSec();
+  $('hTime').textContent = mmss(S.activeSec);
+  $('hBar').style.width = (clamp(S.activeSec/need)*100)+'%';
+  $('hPpm').textContent = S.activeSec>=5 ? Math.round(r.ppm) : 0;
+  $('hAcc').textContent = Math.round(r.acc*1000)/10 + '%';
+  const hn = $('hNota');
+  if(S.activeSec >= 30){ hn.textContent = r.nota.toFixed(1); hn.style.color = r.nota>=CONFIG.NOTA_MINIMA ? 'var(--ok)' : 'var(--err)'; }
+  else { hn.textContent = '—'; hn.style.color=''; }
+  const left = Math.max(0, need - S.activeSec);
+  if(left > 0){
+    $('missing').textContent = mmss(left);
+  } else if(!S.reachedMin){
+    S.reachedMin = true;
+    $('bFinish').disabled = false;
+    $('bottomMsg').innerHTML = '✅ <b>¡Cumpliste el tiempo mínimo!</b> Puedes terminar ahora o seguir escribiendo para mejorar tu nota.';
+    sLvl();
+    toast(`⏱ ¡${DEMO?'1 MINUTO':CONFIG.MIN_MINUTOS+' MINUTOS'} COMPLETADOS!<small>Ya puedes terminar la misión o seguir mejorando.</small>`,4000);
+  }
+}
+
+/* reloj de tiempo activo */
+setInterval(()=>{
+  if(!S.started || S.finished || !$('sGame').classList.contains('on')) return;
+  const active = !document.hidden && document.hasFocus() && (Date.now()-S.lastKey) < CONFIG.INACTIVIDAD_SEG*1000;
+  const st = $('hStatus');
+  if(active){ S.activeSec++; st.textContent='● Reloj corriendo'; st.className='status run'; }
+  else { st.textContent='⏸ Reloj detenido: sigue escribiendo'; st.className='status pause'; }
+  updateHUD();
+},1000);
+
+/* captura de teclado (compatible con teclas muertas para tildes) */
+const cap = $('cap');
+let composing = false;
+function consume(){ const v = cap.value; cap.value=''; for(const ch of v) typeChar(ch); }
+cap.addEventListener('compositionstart',()=>composing=true);
+cap.addEventListener('compositionend',()=>{ composing=false; consume(); });
+cap.addEventListener('input',e=>{ if(composing || e.isComposing) return; consume(); });
+cap.addEventListener('keydown',e=>{
+  if(e.key==='Tab' || e.key==='Enter') e.preventDefault();
+  if(e.key==='Backspace') e.preventDefault();
+});
+cap.addEventListener('paste',e=>{ e.preventDefault(); toast('🚫 No se permite pegar texto',1500); });
+cap.addEventListener('drop',e=>e.preventDefault());
+cap.addEventListener('blur',()=>{ if($('sGame').classList.contains('on') && !S.finished) $('focusVeil').classList.add('on'); });
+cap.addEventListener('focus',()=>$('focusVeil').classList.remove('on'));
+function focusCap(){ cap.focus({preventScroll:true}); }
+$('textCard').addEventListener('click',focusCap);
+document.addEventListener('keydown',e=>{
+  if($('sGame').classList.contains('on') && document.activeElement!==cap && !$('mTeacher').classList.contains('on') && e.key.length===1){ focusCap(); }
+});
+document.addEventListener('contextmenu',e=>{ if($('sGame').classList.contains('on')) e.preventDefault(); });
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden && S.started && !S.finished) $('pauseVeil').classList.add('on');
+});
+$('pauseVeil').addEventListener('click',()=>{ $('pauseVeil').classList.remove('on'); focusCap(); });
+window.addEventListener('focus',()=>{ if(!document.hidden) $('pauseVeil').classList.remove('on'); });
+window.addEventListener('beforeunload',e=>{ if(S.started){ e.preventDefault(); e.returnValue=''; } });
+
+$('bSnd').addEventListener('click',()=>{ soundOn=!soundOn; $('bSnd').textContent = soundOn?'🔊':'🔇'; focusCap(); });
+
+/* ======================================================
+   FINAL
+   ====================================================== */
+$('bFinish').addEventListener('click',()=>{
+  if(S.activeSec < minSec()) return;
+  S.finished = true; cap.blur(); $('focusVeil').classList.remove('on'); $('toast').classList.remove('on');
+  const r = calc(), pass = r.nota >= CONFIG.NOTA_MINIMA;
+  $('fNota').textContent = r.nota.toFixed(1);
+  $('fNota').className = 'nota ' + (pass?'pass':'fail');
+  $('fBadge').className = 'badge ' + (pass?'pass':'fail');
+  $('fBadge').textContent = pass ? '✔ APROBADO' : '✖ NO APROBADO';
+  $('fWho').innerHTML = `${esc(S.name)}<small>Curso ${esc(S.curso)}${DEMO?' · MODO DEMOSTRACIÓN':''}</small>`;
+  const d = new Date();
+  $('fDate').textContent = d.toLocaleDateString('es-CO',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) + ' · ' + d.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  $('fTime').textContent = mmss(S.activeSec);
+  $('fPpm').textContent = Math.round(r.ppm);
+  $('fAcc').textContent = (Math.round(r.acc*1000)/10)+'%';
+  $('fWords').textContent = r.words;
+  $('fPars').textContent = S.parsDone;
+  $('fErr').textContent = S.errors;
+  const top = Object.entries(S.errKeys).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  $('fWeak').innerHTML = top.length ? '<b style="color:var(--dim)">Teclas para practicar más:</b><br>' + top.map(([k,n])=>`<span>${esc(k)} ×${n}</span>`).join('') : '<b style="color:var(--ok)">¡Sin errores! Excelente precisión.</b>';
+  $('fFormula').innerHTML = `Nota = 1.0 + 4.0 × (50% precisión + 50% velocidad).<br>Precisión: <b>${Math.round(r.P*100)}%</b> del puntaje (completo desde ${CONFIG.PREC_TOPE*100}%) · Velocidad: <b>${Math.round(r.V*100)}%</b> del puntaje (completo desde ${CONFIG.PPM_TOPE} ppm).<br>Nota mínima para aprobar: <b>${CONFIG.NOTA_MINIMA.toFixed(1)}</b>`;
+  show('sFinal');
+  sLvl();
+});
+
+/* ======================================================
+   PANEL DOCENTE
+   ====================================================== */
+let teacherCtx = 'start';
+function openTeacher(ctx){
+  teacherCtx = ctx;
+  $('pinStep').style.display=''; $('tStart').style.display='none'; $('tFinal').style.display='none';
+  $('iPin').value=''; $('pinErr').textContent='';
+  $('mTeacher').classList.add('on'); setTimeout(()=>$('iPin').focus(),50);
+}
+$('bTeacherStart').addEventListener('click',()=>openTeacher('start'));
+$('bTeacherFinal').addEventListener('click',()=>openTeacher('final'));
+document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>$('mTeacher').classList.remove('on')));
+function checkPin(){
+  if($('iPin').value.trim().toUpperCase() !== CONFIG.CLAVE_DOCENTE.toUpperCase()){ $('pinErr').textContent='Clave incorrecta.'; return; }
+  $('pinStep').style.display='none';
+  if(teacherCtx==='start'){ $('cDemo').checked = DEMO; $('tStart').style.display=''; }
+  else { renderDetail(); $('tFinal').style.display=''; }
+}
+$('bPin').addEventListener('click',checkPin);
+$('iPin').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); checkPin(); } });
+$('cDemo').addEventListener('change',e=>{ DEMO = e.target.checked; $('demoTagStart').classList.toggle('on',DEMO); });
+function renderDetail(){
+  const r = calc();
+  let h = `<p style="font-size:17px"><b>${esc(S.name)}</b> · Curso ${esc(S.curso)}<br>
+    Nota: <b style="color:${r.nota>=CONFIG.NOTA_MINIMA?'var(--ok)':'var(--err)'}">${r.nota.toFixed(1)}</b> ·
+    Tiempo activo ${mmss(S.activeSec)} · ${Math.round(r.ppm)} ppm · ${(Math.round(r.acc*1000)/10)}% precisión<br>
+    Pulsaciones correctas: ${S.correct} · Errores: ${S.errors} · Niveles completos: ${S.levelsDone}</p>`;
+  if(S.lvlLog.length){
+    h += '<table><tr><th>NIVEL</th><th>TEMA</th><th>PPM</th><th>PRECISIÓN</th></tr>' +
+      S.lvlLog.map(l=>`<tr><td>${l.n}${l.r>1?' (R'+l.r+')':''}</td><td>${esc(l.t)}</td><td>${Math.round(l.ppm)}</td><td>${Math.round(l.acc*100)}%</td></tr>`).join('') + '</table>';
+  } else h += '<p style="color:var(--dim)">No alcanzó a completar un nivel entero.</p>';
+  h += `<p style="color:var(--dim);font-size:14px;margin-top:10px">«Nuevo intento» borra este resultado y vuelve a la pantalla de inicio.</p>`;
+  $('tDetail').innerHTML = h;
+}
+$('bReset').addEventListener('click',()=>{
+  resetState();
+  $('mTeacher').classList.remove('on');
+  $('bFinish').disabled = true;
+  $('bottomMsg').innerHTML = 'Te faltan <b id="missing">30:00</b> de escritura activa para poder terminar.';
+  $('iName').value=''; $('iCurso').value=''; $('startErr').textContent='';
+  show('sStart'); setTimeout(()=>$('iName').focus(),50);
+});
+
+/* ====================================================== */
+buildKeyboard();
+$('iName').focus();
+</script>
+</body>
+</html>
